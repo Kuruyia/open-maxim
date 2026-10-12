@@ -60,10 +60,18 @@ func main() {
 	err = s.Run(ctx)
 	if err != nil {
 		log.Println(err)
+		defer func() {
+			os.Exit(1)
+		}()
+		return
 	}
 
-	if cause := context.Cause(ctx); cause != nil && !errors.Is(cause, context.Canceled) {
+	cause := context.Cause(ctx)
+	if cause != nil && !errors.Is(cause, context.Canceled) {
 		log.Printf("Fatal shutdown: %v\n", cause)
+		defer func() {
+			os.Exit(2)
+		}()
 		return
 	}
 
