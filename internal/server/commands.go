@@ -287,7 +287,7 @@ func directMessage(server *Server, msg events.ClientMessage, ctx *commandContext
 		msg.Origin.Send(events.ServerErrMessage("User is offline."))
 		return
 	}
-	if target.Ignored[target.Username] {
+	if target.Ignored[ctx.user.Username] {
 		return
 	}
 	targetSession.client.Send(FormatWhisperTarget(ctx.user.Username, msg.Args[1]))
