@@ -102,6 +102,18 @@ func (s *Server) finishAuth(result authResult, ctx context.Context) {
 	}
 	sess.pending = false
 
+	defer func() {
+		for len(sess.queue) > 0 && !sess.pending && !result.client.IsClosed() && ctx.Err() == nil {
+			msg := sess.queue[0]
+			sess.queue[0] = events.ClientMessage{}
+			sess.queue = sess.queue[1:]
+			s.commandRouter(msg, ctx)
+		}
+		if len(sess.queue) == 0 {
+			sess.queue = nil
+		}
+	}()
+
 	if result.err != nil {
 		authError(result.client, result.command, result.err.Error())
 		return
@@ -118,7 +130,7 @@ func (s *Server) finishAuth(result authResult, ctx context.Context) {
 			return
 		}
 
-		if _, exists := s.online[result.user.Username]; exists {
+		if _, exists = s.online[result.user.Username]; exists {
 			authError(result.client, result.command, "User is already logged in.")
 			return
 		}
@@ -152,16 +164,6 @@ func (s *Server) finishAuth(result authResult, ctx context.Context) {
 	default:
 		log.Println("error: unsupported command")
 		return
-	}
-
-	for len(sess.queue) > 0 && !sess.pending && !result.client.IsClosed() && ctx.Err() == nil {
-		msg := sess.queue[0]
-		sess.queue[0] = events.ClientMessage{}
-		sess.queue = sess.queue[1:]
-		s.commandRouter(msg, ctx)
-	}
-	if len(sess.queue) == 0 {
-		sess.queue = nil
 	}
 }
 
