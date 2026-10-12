@@ -175,6 +175,7 @@ func (c *Client) readLoop(ctx context.Context, commands Engine) error {
 				}
 			}
 			c.Send(ServerErrMessage("Message exceeds maximum size."))
+			continue
 		}
 		msg := NewMessageFromClient(string(line), c)
 		if msg.Command == "" {
