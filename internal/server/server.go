@@ -177,6 +177,11 @@ func (s *Server) removeClient(client *events.Client) {
 		return
 	}
 	delete(s.online, sess.username)
+
+	if user, ok := s.Users.Get(sess.username); ok {
+		sendStatusToBuddies(s, user, events.BuddyStatusOffline)
+	}
+
 	if sess.channelName != "" {
 		// TODO: Maybe specify that the user left because they got disconnected
 		channel, ok := s.Channels.Get(sess.channelName)
@@ -188,9 +193,6 @@ func (s *Server) removeClient(client *events.Client) {
 		AnnounceLeftChannel(s, channel, sess.username)
 		delete(channel.Members, sess.username)
 		_ = s.Channels.Update(channel)
-	}
-	if user, ok := s.Users.Get(sess.username); ok {
-		sendStatusToBuddies(s, user, events.BuddyStatusOffline)
 	}
 	client.Wait()
 }
