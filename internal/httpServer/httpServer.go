@@ -97,7 +97,7 @@ func RunHttpServer(ctx context.Context, cancel context.CancelCauseFunc, port int
 		<-ctx.Done()
 		log.Println("[HTTP] Shutting down server...")
 
-		shutdownCtx, cancelHandle := context.WithTimeout(ctx, 5*time.Second)
+		shutdownCtx, cancelHandle := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
 		defer cancelHandle()
 
 		if err := s.Shutdown(shutdownCtx); err != nil {
