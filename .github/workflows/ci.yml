@@ -1,13 +1,22 @@
 name: CI
 
 on:
-  pull_request:
-    branches:
+  push:
+    branches-ignore:
       - main
       - master
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  test:
+  go:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -16,16 +25,31 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v7
         with:
-          go-version: '1.27'
-
-      - name: Install dependencies
-        run: go mod download
+          go-version-file: go.mod
 
       - name: Lint
-        run: make lint
+        uses: golangci/golangci-lint-action@v9
 
       - name: Format
-        run: make format
+        run: golangci-lint fmt --diff ./...
 
-      - name: Build Binary
+      - name: Vet
+        run: go vet ./...
+
+      - name: Tidy
+        run: go mod tidy -diff
+
+      - name: Build
         run: go build -v ./cmd/server/
+
+      - name: Test
+        run: go test -race -shuffle=on -count=1 ./...
+
+  govulncheck:
+    name: govulncheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run govulncheck
+        uses: golang/govulncheck-action@v1 # v1.1.0
+        with:
+          go-version-file: go.mod
