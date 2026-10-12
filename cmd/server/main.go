@@ -33,7 +33,12 @@ func addTestUsers(s *server.Server) error {
 }
 
 func main() {
-	config.CONFIG = config.GetConfig()
+	var err error
+	config.CONFIG, err = config.GetConfig()
+	if err != nil {
+		log.Printf("Configuration error: %v", err)
+		return
+	}
 
 	dev := flag.Bool("dev", false, "create dummy and test accounts with password 'password'")
 	flag.Parse()
@@ -52,7 +57,7 @@ func main() {
 	defer stop()
 
 	go httpServer.RunHttpServer(ctx, cancel, config.CONFIG.HttpPort)
-	err := s.Run(ctx)
+	err = s.Run(ctx)
 	if err != nil {
 		log.Println(err)
 	}

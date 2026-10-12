@@ -3,6 +3,8 @@ package server
 import (
 	"bytes"
 	"context"
+	"errors"
+	"log"
 	"maxim/internal/events"
 	"maxim/internal/models"
 	"maxim/internal/utils"
@@ -147,6 +149,9 @@ func (s *Server) finishAuth(result authResult, ctx context.Context) {
 
 		result.client.Send(result.reply)
 		result.client.Send(events.NewDetailsOkMessage())
+	default:
+		log.Println("error: unsupported command")
+		return
 	}
 
 	for len(sess.queue) > 0 && !sess.pending && !result.client.IsClosed() && ctx.Err() == nil {
@@ -157,6 +162,20 @@ func (s *Server) finishAuth(result authResult, ctx context.Context) {
 	}
 	if len(sess.queue) == 0 {
 		sess.queue = nil
+	}
+}
+
+func (s *Server) newUser(username string, password []byte, details models.UserDetails) func() (*models.User, error) {
+	return func() (*models.User, error) {
+		hash, err := s.Hash.GenerateHash(password)
+		if err != nil {
+			return nil, errors.New("could not process password")
+		}
+		return &models.User{
+			Username: username,
+			Password: *hash,
+			Details:  details,
+		}, nil
 	}
 }
 

@@ -12,6 +12,7 @@ import (
 )
 
 type commandContext struct {
+	//nolint:containedctx // request-scoped: lives for one command dispatch
 	context.Context
 	session *session
 	user    *models.User
@@ -24,8 +25,8 @@ func newCommandContext(ctx context.Context, sess *session) *commandContext {
 	}
 }
 
-func validateName(name string, max int) bool {
-	if len(name) == 0 || len(name) > max {
+func validateName(name string, maxLen int) bool {
+	if len(name) == 0 || len(name) > maxLen {
 		return false
 	}
 
@@ -108,12 +109,12 @@ func sendStatusToBuddies(server *Server, currentUser *models.User, status events
 
 func AnnounceLeftChannel(server *Server, channel *models.Channel, username string) {
 	broadcastToChannel(server, channel, "", events.UserLeaveMessage(username))
-	broadcastToChannel(server, channel, "", events.ServerMessage(fmt.Sprintf("%s left the channel", username)))
+	broadcastToChannel(server, channel, "", events.ServerMessage(username+" left the channel"))
 }
 
 func AnnounceJoinedChannel(server *Server, channel *models.Channel, username string) {
 	broadcastToChannel(server, channel, "", events.UserJoinMessage(username))
-	broadcastToChannel(server, channel, "", events.ServerMessage(fmt.Sprintf("%s joined the channel", username)))
+	broadcastToChannel(server, channel, "", events.ServerMessage(username+" joined the channel"))
 }
 
 func FormatChannelMessage(channel, username, message string) events.Message {

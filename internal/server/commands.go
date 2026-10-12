@@ -1,8 +1,6 @@
 package server
 
 import (
-	"errors"
-	"fmt"
 	"log"
 	"maxim/internal/events"
 	"maxim/internal/models"
@@ -108,17 +106,7 @@ func register(server *Server, msg events.ClientMessage, ctx *commandContext) {
 		return
 	}
 	password := []byte(msg.Args[1])
-	server.startAuth(msg, ctx, func() (*models.User, error) {
-		hash, err := server.Hash.GenerateHash(password)
-		if err != nil {
-			return nil, errors.New("could not process password")
-		}
-		return &models.User{
-			Username: username,
-			Password: *hash,
-			Details:  details,
-		}, nil
-	})
+	server.startAuth(msg, ctx, server.newUser(username, password, details))
 }
 
 func quit(_ *Server, msg events.ClientMessage, _ *commandContext) { _ = msg.Origin.Close() }
@@ -265,7 +253,7 @@ func create(server *Server, msg events.ClientMessage, _ *commandContext) {
 		msg.Origin.Send(events.ServerErrMessage("Failed to create channel."))
 		return
 	}
-	msg.Origin.Send(events.ServerMessage(fmt.Sprintf("Created channel: %s", name)))
+	msg.Origin.Send(events.ServerMessage("Created channel: " + name))
 	for _, sess := range server.online {
 		sess.client.Send(events.ChannelAddedMessage(name))
 	}
@@ -325,21 +313,10 @@ func newDetails(server *Server, msg events.ClientMessage, ctx *commandContext) {
 		authError(msg.Origin, msg.Command, err.Error())
 		return
 	}
-	username := ctx.user.Username
-	password := []byte(msg.Args[0])
-	server.startAuth(msg, ctx, func() (*models.User, error) {
-		hash, err := server.Hash.GenerateHash(password)
-		if err != nil {
-			return nil, errors.New("could not process password")
-		}
-		return &models.User{
-			Username: username,
-			Password: *hash,
-			Details:  details,
-		}, nil
-	})
+	server.startAuth(msg, ctx, server.newUser(ctx.user.Username, []byte(msg.Args[0]), details))
 }
 
+//nolint:dupl // list management might evolve and differ in features (mutual buddies, etc.)
 func buddy(server *Server, msg events.ClientMessage, ctx *commandContext) {
 	if len(msg.Args) < 2 {
 		msg.Origin.Send(events.ServerErrMessage("Expected an operation and a username."))
@@ -371,7 +348,7 @@ func buddy(server *Server, msg events.ClientMessage, ctx *commandContext) {
 		}
 		msg.Origin.Send(events.BuddyAddMessage(target))
 		msg.Origin.Send(events.BuddyStatusMessage(target, buddyStatus(server, target)))
-		msg.Origin.Send(events.ServerMessage(fmt.Sprintf("%s is now your buddy!", target)))
+		msg.Origin.Send(events.ServerMessage(target + " is now your buddy!"))
 	case "REMOVE":
 		if !ctx.user.Buddies[target] {
 			msg.Origin.Send(events.ServerErrMessage("User is not your buddy."))
@@ -382,12 +359,13 @@ func buddy(server *Server, msg events.ClientMessage, ctx *commandContext) {
 			return
 		}
 		msg.Origin.Send(events.BuddyRemoveMessage(target))
-		msg.Origin.Send(events.ServerMessage(fmt.Sprintf("%s is not your buddy anymore :(", target)))
+		msg.Origin.Send(events.ServerMessage(target + " is not your buddy anymore :("))
 	default:
 		msg.Origin.Send(events.ServerErrMessage("Unsupported operation."))
 	}
 }
 
+//nolint:dupl // list management might evolve and differ in features (mutual buddies, etc.)
 func ignore(server *Server, msg events.ClientMessage, ctx *commandContext) {
 	if len(msg.Args) < 2 {
 		msg.Origin.Send(events.ServerErrMessage("Expected an operation and a username."))
@@ -418,7 +396,7 @@ func ignore(server *Server, msg events.ClientMessage, ctx *commandContext) {
 			return
 		}
 		msg.Origin.Send(events.IgnoreAddMessage(target))
-		msg.Origin.Send(events.ServerMessage(fmt.Sprintf("%s is now ignored.", target)))
+		msg.Origin.Send(events.ServerMessage(target + " is now ignored."))
 	case "REMOVE":
 		if !ctx.user.Ignored[target] {
 			msg.Origin.Send(events.ServerErrMessage("User is not ignored."))
@@ -429,7 +407,7 @@ func ignore(server *Server, msg events.ClientMessage, ctx *commandContext) {
 			return
 		}
 		msg.Origin.Send(events.IgnoreRemoveMessage(target))
-		msg.Origin.Send(events.ServerMessage(fmt.Sprintf("%s is not ignored anymore.", target)))
+		msg.Origin.Send(events.ServerMessage(target + " is not ignored anymore."))
 	default:
 		msg.Origin.Send(events.ServerErrMessage("Unsupported operation."))
 	}
@@ -442,5 +420,5 @@ func report(_ *Server, msg events.ClientMessage, ctx *commandContext) {
 	}
 
 	log.Printf("REPORT: user %q reported %q", ctx.user.Username, msg.Args[0])
-	msg.Origin.Send(events.ServerMessage(fmt.Sprintf("%s successfully reported.", msg.Args[0])))
+	msg.Origin.Send(events.ServerMessage(msg.Args[0] + " successfully reported."))
 }

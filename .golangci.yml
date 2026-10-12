@@ -1,7 +1,7 @@
 version: "2"
 
 linters:
-  disable-all: true
+  default: none
   enable:
     - errcheck
     - govet
@@ -24,6 +24,14 @@ linters:
     - thelper
     - testifylint
     - sloglint
+    - predeclared
+    - containedctx
+    - contextcheck
+    - dupl
+    - forbidigo
+    - exhaustive
+    - usestdlibvars
+    - perfsprint
   settings:
     revive:
       rules:
@@ -31,6 +39,24 @@ linters:
           disabled: true
         - name: package-comments
           disabled: true
+    dupl:
+      threshold: 50
+    forbidigo:
+      forbid:
+        - pattern: ^fmt\.Print.*$
+          msg: use the log package instead of printing to stdout
+        - pattern: ^log\.(Fatal|Panic).*$
+          msg: return an error and let main decide how to exit
+      analyze-types: true
+    exhaustive:
+      default-signifies-exhaustive: true
+  exclusions:
+    warn-unused: true
+    generated: strict
+    rules:
+      - path: ^cmd/
+        linters:
+          - forbidigo
 
 formatters:
   enable:
@@ -44,5 +70,3 @@ formatters:
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
-
-

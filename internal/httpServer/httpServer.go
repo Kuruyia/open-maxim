@@ -39,7 +39,7 @@ func handleAdvert(w http.ResponseWriter, _ *http.Request) {
 	)
 	_, err := w.Write([]byte(body))
 	if err != nil {
-		fmt.Printf("error writing response: %s\n", err)
+		log.Printf("error writing response: %s\n", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -55,7 +55,7 @@ func handleConfig(w http.ResponseWriter, _ *http.Request) {
 	)
 	_, err := w.Write([]byte(body))
 	if err != nil {
-		fmt.Printf("error writing response: %s\n", err)
+		log.Printf("error writing response: %s\n", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

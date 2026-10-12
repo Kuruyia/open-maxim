@@ -1,7 +1,7 @@
 package config
 
 import (
-	"log"
+	"errors"
 	"os"
 	"strconv"
 )
@@ -22,18 +22,18 @@ type Config struct {
 	Big        AdvertConfig
 }
 
-func validatePort(srcPort string) int {
+func validatePort(srcPort string) (int, error) {
 	port, err := strconv.Atoi(srcPort)
 	if err != nil {
-		log.Fatalf("Invalid port number")
+		return 0, errors.New("invalid port number")
 	}
 	if port < 1 || port > 65535 {
-		log.Fatal("port must be between 1 and 65535")
+		return 0, errors.New("port must be between 1 and 65535")
 	}
-	return port
+	return port, nil
 }
 
-func GetConfig() Config {
+func GetConfig() (Config, error) {
 	chatPort := os.Getenv("MAXIM_CHAT_PORT")
 	if chatPort == "" {
 		chatPort = "2002"
@@ -74,9 +74,19 @@ func GetConfig() Config {
 		bigImagePath = "./assets/big.png"
 	}
 
+	chatPortInt, err := validatePort(chatPort)
+	if err != nil {
+		return Config{}, err
+	}
+
+	httpPortInt, err := validatePort(httpPort)
+	if err != nil {
+		return Config{}, err
+	}
+
 	return Config{
-		ChatPort:   validatePort(chatPort),
-		HttpPort:   validatePort(httpPort),
+		ChatPort:   chatPortInt,
+		HttpPort:   httpPortInt,
 		ChatAddr:   chatAddr,
 		AdvertAddr: advertAddr,
 		Banner: AdvertConfig{
@@ -87,7 +97,7 @@ func GetConfig() Config {
 			TextPath:  bigTextPath,
 			ImagePath: bigImagePath,
 		},
-	}
+	}, nil
 }
 
 var CONFIG = Config{}
