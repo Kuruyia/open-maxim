@@ -1,5 +1,5 @@
 [ADVERT]
-	ADVERT_IMAGE=http://<your-ip>/banner.png
+	ADVERT_IMAGE=<your-address>/banner.png
 
 	ADVERT_TIME=60
 

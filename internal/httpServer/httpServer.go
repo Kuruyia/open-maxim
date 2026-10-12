@@ -8,6 +8,7 @@ import (
 	"maxim/internal/config"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -23,7 +24,7 @@ func handleServeFile(path string, fileType string) httpHandler {
 			w.WriteHeader(http.StatusInternalServerError)
 			log.Println(err)
 		}
-		_, err = w.Write(data)
+		_, err = w.Write([]byte(strings.ReplaceAll(string(data), "<your-address>", config.CONFIG.AdvertAddr)))
 		if err != nil {
 			log.Println(err)
 		}
