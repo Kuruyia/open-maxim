@@ -184,7 +184,7 @@ func join(server *Server, msg events.ClientMessage, ctx *commandContext) {
 	}
 
 	if ctx.session.channelName != "" {
-		oldChannel, ok := server.Channels.Get(msg.Args[0])
+		oldChannel, ok := server.Channels.Get(ctx.session.channelName)
 		if !ok {
 			return
 		}
